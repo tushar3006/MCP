@@ -71,7 +71,7 @@ The server offers six core tools:
 
 ## Usage Locally with Claude Desktop
 
-An full-version guide can be found [here](https://modelcontextprotocol.io/quickstart/user). Below is a quick guide to get started:
+Below is a quick guide to get started, and a more general and detailed guide can be found [here](https://modelcontextprotocol.io/quickstart/user). 
 
 
 1. Install [Claude AI Desktop App](https://claude.ai/download)
