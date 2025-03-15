@@ -1,0 +1,32 @@
+{
+  "exclude_patterns": {
+    "databases": [
+      "build",
+      "ci",
+      "backup",
+      "temp",
+      "test",
+      "dev"
+    ],
+    "schemas": [
+      "backup",
+      "back_up",
+      "temp",
+      "tmp",
+      "test",
+      "staging",
+      "util",
+      "information_schema"
+    ],
+    "tables": [
+      "backup",
+      "bak",
+      "tmp",
+      "temp",
+      "test",
+      "copy",
+      "old",
+      "archive"
+    ]
+  }
+}
