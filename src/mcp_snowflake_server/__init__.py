@@ -21,7 +21,7 @@ def parse_args():
         "--prefetch",
         action="store_true",
         dest="prefetch",
-        default=True,
+        default=False,
         help="Prefetch table descriptions (when enabled, list_tables and describe_table are disabled)",
     )
     parser.add_argument(
