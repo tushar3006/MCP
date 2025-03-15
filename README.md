@@ -18,22 +18,22 @@ The server offers six core tools:
 
 #### Query Tools
 - `read_query`
-  - Execute SELECT queries to read data from the database
-  - Input:
-    - `query` (string): The SELECT SQL query to execute
-  - Returns: Query results as array of objects
+   - Execute SELECT queries to read data from the database
+   - Input:
+     - `query` (string): The SELECT SQL query to execute
+   - Returns: Query results as array of objects
 
 - `write_query` (with `--allow-write` flag)
-  - Execute INSERT, UPDATE, or DELETE queries
-  - Input:
-    - `query` (string): The SQL modification query
-  - Returns: `{ affected_rows: number }`
+   - Execute INSERT, UPDATE, or DELETE queries
+   - Input:
+     - `query` (string): The SQL modification query
+   - Returns: `{ affected_rows: number }`
 
 - `create_table` (with `--allow-write` flag)
-  - Create new tables in the database
-  - Input:
-    - `query` (string): CREATE TABLE SQL statement
-  - Returns: Confirmation of table creation
+   - Create new tables in the database
+   - Input:
+     - `query` (string): CREATE TABLE SQL statement
+   - Returns: Confirmation of table creation
 
 #### Schema Tools
 - `list_databases`
@@ -55,24 +55,63 @@ The server offers six core tools:
   - Returns: Array of table metadata.
 
 - `describe-table`
-  - View column information for a specific table
-  - Input:
-    - `table_name` (string): Fully qualified name of table to describe (e.g., `database.schema.table`)
-  - Returns: Array of column definitions with names and types
+   - View column information for a specific table
+   - Input:
+     - `table_name` (string): Name of table to describe (can be fully qualified)
+   - Returns: Array of column definitions with names and types
 
 #### Analysis Tools
 - `append_insight`
-  - Add new data insights to the memo resource
-  - Input:
-    - `insight` (string): data insight discovered from analysis
-  - Returns: Confirmation of insight addition
-  - Triggers update of memo://insights resource
+   - Add new data insights to the memo resource
+   - Input:
+     - `insight` (string): data insight discovered from analysis
+   - Returns: Confirmation of insight addition
+   - Triggers update of memo://insights resource
 
 
-## Usage Locally with Claude Desktop
+## Usage with Claude Desktop
 
-Below is a quick guide to get started, and a more general and detailed guide can be found [here](https://modelcontextprotocol.io/quickstart/user). 
+### Installing via Smithery
 
+To install Snowflake Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/mcp_snowflake_server):
+
+```bash
+npx -y @smithery/cli install mcp_snowflake_server --client claude
+```
+
+### Installing via UVX 
+
+```python
+# Add the server to your claude_desktop_config.json (Claude -> Settings -> Developer -> Edit Config)
+"mcpServers": {
+  "snowflake_pip": {
+      "command": "uvx",
+      "args": [
+          "mcp_snowflake_server",
+          "--account",
+          "the_account",
+          "--warehouse",
+          "the_warehouse",
+          "--user",
+          "the_user",
+          "--password",
+          "their_password",
+          "--role",
+          "the_role"
+          "--database",
+          "the_database",
+          "--schema",
+          "the_schema",
+          # Optionally: "--allow_write" (but not recommended)
+          # Optionally: "--log_dir", "/absolute/path/to/logs"
+          # Optionally: "--log_level", "DEBUG"/"INFO"/"WARNING"/"ERROR"/"CRITICAL"
+          # Optionally: "--exclude_tools", "{tool name}", ["{other tool name}"]
+      ]
+  }
+}
+```
+
+### Installing locally
 
 1. Install [Claude AI Desktop App](https://claude.ai/download)
 
@@ -89,7 +128,8 @@ SNOWFLAKE_ROLE="XXX"     # This determines the access scope of the MCP
 SNOWFLAKE_DATABASE="XXX" # This doesn't affect the MCP's access scope
 SNOWFLAKE_SCHEMA="XXX"   # This doesn't affect the MCP's access scope
 SNOWFLAKE_WAREHOUSE="XXX"
-SNOWFLAKE_AUTHENTICATOR="externalbrowser"  # Use Okta for authentication
+SNOWFLAKE_PASSWORD="XXX"
+# SNOWFLAKE_AUTHENTICATOR="externalbrowser" 
 ```
 
 4. [Optional] Modify the `exclude_patterns` in `runtime_config.json` to filter out the resources you want to exclude.
