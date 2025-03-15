@@ -85,18 +85,21 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 SNOWFLAKE_USER="XXX@EMAIL.COM"
 SNOWFLAKE_ACCOUNT="XXX"
-SNOWFLAKE_ROLE="XXX"
+SNOWFLAKE_ROLE="XXX"     # This determines the access scope of the MCP
 SNOWFLAKE_DATABASE="XXX" # This doesn't affect the MCP's access scope
 SNOWFLAKE_SCHEMA="XXX"   # This doesn't affect the MCP's access scope
 SNOWFLAKE_WAREHOUSE="XXX"
-SNOWFLAKE_AUTHENTICATOR="externalbrowser"
+SNOWFLAKE_AUTHENTICATOR="externalbrowser"  # Use Okta for authentication
 ```
-4. Test locally using 
+
+4. [Optional] Modify the `exclude_patterns` in `runtime_config.json` to filter out the resources you want to exclude.
+   
+5. Test locally using 
 ```
 uv --directory /absolute/path/to/mcp_snowflake_server run mcp_snowflake_server
 ```
 
-5. Add the server to your `claude_desktop_config.json`
+6. Add the server to your `claude_desktop_config.json` (Claude -> Settings -> Developer -> Edit Config)
 ```python
 "mcpServers": {
   "snowflake_local": {
