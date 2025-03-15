@@ -69,7 +69,10 @@ The server offers six core tools:
   - Triggers update of memo://insights resource
 
 
-## Usage with Claude Desktop Locally
+## Usage Locally with Claude Desktop
+
+An full-version guide can be found [here](https://modelcontextprotocol.io/quickstart/user). Below is a quick guide to get started:
+
 
 1. Install [Claude AI Desktop App](https://claude.ai/download)
 
