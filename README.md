@@ -129,6 +129,7 @@ SNOWFLAKE_DATABASE="XXX" # This doesn't affect the MCP's access scope
 SNOWFLAKE_SCHEMA="XXX"   # This doesn't affect the MCP's access scope
 SNOWFLAKE_WAREHOUSE="XXX"
 SNOWFLAKE_PASSWORD="XXX"
+# Alternatively, you can use external browser for authentication without specifying the password
 # SNOWFLAKE_AUTHENTICATOR="externalbrowser" 
 ```
 
