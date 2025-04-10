@@ -36,10 +36,23 @@ The server offers six core tools:
    - Returns: Confirmation of table creation
 
 #### Schema Tools
+- `list_databases`
+  - Get a list of all databases in the Snowflake instance.
+  - No input required
+  - Returns: Array of database names.
+
+- `list_schemas`
+  - Get a list of all schemas in a specific database.
+  - Input:
+    - `database` (string): Name of the database.
+  - Returns: Array of schema names.
+
 - `list_tables`
-   - Get a list of all tables in the database
-   - No input required
-   - Returns: Array of table names
+  - Get a list of all tables in a specific database and schema.
+  - Input:
+    - `database` (string): Name of the database.
+    - `schema` (string): Name of the schema.
+  - Returns: Array of table metadata.
 
 - `describe-table`
    - View column information for a specific table
@@ -66,10 +79,10 @@ To install Snowflake Server for Claude Desktop automatically via [Smithery](http
 npx -y @smithery/cli install mcp_snowflake_server --client claude
 ```
 
-### Installing via UVX
+### Installing via UVX 
 
 ```python
-# Add the server to your claude_desktop_config.json
+# Add the server to your claude_desktop_config.json (Claude -> Settings -> Developer -> Edit Config)
 "mcpServers": {
   "snowflake_pip": {
       "command": "uvx",
@@ -100,31 +113,45 @@ npx -y @smithery/cli install mcp_snowflake_server --client claude
 ```
 
 ### Installing locally
+
+1. Install [Claude AI Desktop App](https://claude.ai/download)
+
+2. Install `uv` by:
+```
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+3. Create a `.env` file using the following template under this dir
+```
+SNOWFLAKE_USER="XXX@EMAIL.COM"
+SNOWFLAKE_ACCOUNT="XXX"
+SNOWFLAKE_ROLE="XXX"     # This determines the access scope of the MCP
+SNOWFLAKE_DATABASE="XXX" # This doesn't affect the MCP's access scope
+SNOWFLAKE_SCHEMA="XXX"   # This doesn't affect the MCP's access scope
+SNOWFLAKE_WAREHOUSE="XXX"
+SNOWFLAKE_PASSWORD="XXX"
+# Alternatively, you can use external browser for authentication without specifying the password
+# SNOWFLAKE_AUTHENTICATOR="externalbrowser" 
+```
+
+4. [Optional] Modify the `exclude_patterns` in `runtime_config.json` to filter out the resources you want to exclude.
+   
+5. Test locally using 
+```
+uv --directory /absolute/path/to/mcp_snowflake_server run mcp_snowflake_server
+```
+
+6. Add the server to your `claude_desktop_config.json` (Claude -> Settings -> Developer -> Edit Config)
 ```python
-# Add the server to your claude_desktop_config.json
 "mcpServers": {
   "snowflake_local": {
-      "command": "uv",
+      "command": "/absolute/path/to/uv", # obtained by using `which uv`
       "args": [
           # Optionally: "--python=3.12", If your system uses 3.13 or higher by default (Snowflake requires <=3.12)
           "--directory",
           "/absolute/path/to/mcp_snowflake_server",
           "run",
           "mcp_snowflake_server",
-          "--account",
-          "the_account",
-          "--warehouse",
-          "the_warehouse",
-          "--user",
-          "the_user",
-          "--password",
-          "their_password",
-          "--role",
-          "the_role"
-          "--database",
-          "the_database",
-          "--schema",
-          "the_schema",
           # Optionally: "--allow_write" (but not recommended)
           # Optionally: "--log_dir", "/absolute/path/to/logs"
           # Optionally: "--log_level", "DEBUG"/"INFO"/"WARNING"/"ERROR"/"CRITICAL"
