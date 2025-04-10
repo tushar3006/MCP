@@ -74,6 +74,7 @@ npx -y @smithery/cli install mcp_snowflake_server --client claude
   "snowflake_pip": {
       "command": "uvx",
       "args": [
+          # Optionally: "--python=3.12", If your system uses 3.13 or higher by default (Snowflake requires <=3.12)
           "mcp_snowflake_server",
           "--account",
           "the_account",
@@ -105,6 +106,7 @@ npx -y @smithery/cli install mcp_snowflake_server --client claude
   "snowflake_local": {
       "command": "uv",
       "args": [
+          # Optionally: "--python=3.12", If your system uses 3.13 or higher by default (Snowflake requires <=3.12)
           "--directory",
           "/absolute/path/to/mcp_snowflake_server",
           "run",
