@@ -221,13 +221,21 @@ async def handle_read_query(arguments, db, write_detector, *_):
         raise ValueError("Calls to read_query should not contain write operations")
 
     data, data_id = await db.execute_query(arguments["query"])
+
+    # Custom serializer that checks for 'date' type
+    def custom_serializer(obj):
+        from datetime import date
+        if isinstance(obj, date):
+            return obj.isoformat()
+        else:
+            return obj
     output = {
         "type": "data",
         "data_id": data_id,
         "data": data,
     }
     yaml_output = data_to_yaml(output)
-    json_output = json.dumps(output)
+    json_output = json.dumps(output, default=custom_serializer)
     return [
         types.TextContent(type="text", text=yaml_output),
         types.EmbeddedResource(
