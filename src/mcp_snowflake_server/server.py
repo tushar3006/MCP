@@ -28,8 +28,8 @@ def data_to_yaml(data: Any) -> str:
 
 # Custom serializer that checks for 'date' type
 def data_json_serializer(obj):
-    from datetime import date
-    if isinstance(obj, date):
+    from datetime import date, datetime
+    if isinstance(obj, date) or isinstance(obj, datetime):
         return obj.isoformat()
     else:
         return obj
