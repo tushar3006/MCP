@@ -26,6 +26,14 @@ logger = logging.getLogger("mcp_snowflake_server")
 def data_to_yaml(data: Any) -> str:
     return yaml.dump(data, indent=2, sort_keys=False)
 
+# Custom serializer that checks for 'date' type
+def data_json_serializer(obj):
+    from datetime import date, datetime
+    if isinstance(obj, date) or isinstance(obj, datetime):
+        return obj.isoformat()
+    else:
+        return obj
+
 
 def handle_tool_errors(func: Callable) -> Callable:
     """Decorator to standardize tool error handling"""
@@ -221,13 +229,14 @@ async def handle_read_query(arguments, db, write_detector, *_):
         raise ValueError("Calls to read_query should not contain write operations")
 
     data, data_id = await db.execute_query(arguments["query"])
+
     output = {
         "type": "data",
         "data_id": data_id,
         "data": data,
     }
     yaml_output = data_to_yaml(output)
-    json_output = json.dumps(output)
+    json_output = json.dumps(output, default=data_json_serializer)
     return [
         types.TextContent(type="text", text=yaml_output),
         types.EmbeddedResource(
