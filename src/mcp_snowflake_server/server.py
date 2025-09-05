@@ -275,6 +275,83 @@ async def handle_create_table(arguments, db, _, allow_write, __):
     return [types.TextContent(type="text", text=f"Table created successfully. data_id = {data_id}")]
 
 
+@handle_tool_errors
+async def handle_get_event_media(arguments, db, *_):
+    """Get event media data (videos/images) for violations"""
+    if not arguments:
+        raise ValueError("Missing arguments for event media request")
+    
+    site_id = arguments.get("site_id")
+    violation_ids = arguments.get("violation_ids", [])
+    
+    if not site_id:
+        raise ValueError("site_id is required for security filtering")
+    
+    if not violation_ids or len(violation_ids) == 0:
+        raise ValueError("violation_ids are required")
+    
+    # Convert violation_ids to strings and validate
+    violation_ids = [str(vid) for vid in violation_ids]
+    
+    # Get database connection details to determine region
+    connection_args = db.connection_args or {}
+    database = connection_args.get("database", "").upper()
+    
+    # Map database to region
+    region_map = {
+        "PROTEX_DB_US": "us",
+        "PROTEX_DB_EU": "eu", 
+        "PROTEX_DB_APAC": "apac",
+        "PROTEX_DB_CA": "ca",
+        "PROTEX_DB_TESLA": "us"
+    }
+    
+    region = region_map.get(database, "eu")  # Default to EU
+    
+    # Build the query to get event UUIDs
+    violation_ids_str = "', '".join(violation_ids)
+    query = f"""
+        SELECT VIOLATION_ID, DEVICE_EVENT_UUID, SITE_ID, CAMERA_ID, RULE_ID, VIOLATION_DATE_WITH_TIMEZONE
+        FROM {database}.PUBLIC.mart_shifts 
+        WHERE SITE_ID = {site_id} 
+        AND VIOLATION_ID IN ('{violation_ids_str}')
+        AND DEVICE_EVENT_UUID IS NOT NULL 
+        ORDER BY VIOLATION_DATE_WITH_TIMEZONE DESC
+    """
+    
+    try:
+        data, data_id = await db.execute_query(query)
+        
+        if not data:
+            return [types.TextContent(
+                type="text", 
+                text=f"No event media found for site {site_id} with violation IDs: {', '.join(violation_ids)}"
+            )]
+        
+        # Format as event_media type for frontend processing
+        event_media_blocks = []
+        for row in data:
+            event_media_blocks.append({
+                "REGION": region,
+                "DEVICE_EVENT_UUID": row["DEVICE_EVENT_UUID"]
+            })
+        
+        # Create response message
+        response_text = f"✅ Found {len(event_media_blocks)} event videos for Site ID {site_id} in {region.upper()} region.\n\n"
+        
+        # Add each event media block as JSON for frontend processing
+        for block in event_media_blocks:
+            response_text += f"{json.dumps(block)}\n\n"
+        
+        response_text += "The frontend will automatically display these as interactive video players with download capabilities."
+        
+        return [types.TextContent(type="text", text=response_text)]
+        
+    except Exception as e:
+        logger.error(f"Error fetching event media: {str(e)}")
+        raise ValueError(f"Failed to fetch event media: {str(e)}")
+
+
 async def prefetch_tables(db: SnowflakeDB, credentials: dict) -> dict:
     """Prefetch table and column information"""
     try:
@@ -469,6 +546,26 @@ async def main(
             },
             handler=handle_create_table,
             tags=["write"],
+        ),
+        Tool(
+            name="get_event_media",
+            description="Get event media (videos/images) for specific violations at a site. Returns structured JSON that the frontend automatically displays as interactive media players.",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "site_id": {
+                        "type": "integer",
+                        "description": "Site ID for security filtering (REQUIRED)"
+                    },
+                    "violation_ids": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of violation IDs to get media for (REQUIRED)"
+                    }
+                },
+                "required": ["site_id", "violation_ids"],
+            },
+            handler=handle_get_event_media,
         ),
     ]
 
