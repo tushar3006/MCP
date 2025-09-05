@@ -328,24 +328,40 @@ async def handle_get_event_media(arguments, db, *_):
                 text=f"No event media found for site {site_id} with violation IDs: {', '.join(violation_ids)}"
             )]
         
-        # Format as event_media type for frontend processing
-        event_media_blocks = []
+        # Create clean, structured response for frontend
+        response_text = f"Found {len(data)} event video{'s' if len(data) != 1 else ''} for Site {site_id}:\n\n"
+        
+        # Create event_media structured response
+        event_media_data = {
+            "type": "event_media",
+            "data_id": data_id,
+            "site_id": site_id,
+            "region": region,
+            "data": []
+        }
+        
+        # Add each event media
         for row in data:
-            event_media_blocks.append({
+            event_media_data["data"].append({
                 "REGION": region,
                 "DEVICE_EVENT_UUID": row["DEVICE_EVENT_UUID"]
             })
         
-        # Create response message
-        response_text = f"✅ Found {len(event_media_blocks)} event videos for Site ID {site_id} in {region.upper()} region.\n\n"
+        # Add structured JSON and embedded resource
+        yaml_output = data_to_yaml(event_media_data)
+        json_output = json.dumps(event_media_data, default=data_json_serializer)
         
-        # Add each event media block as JSON for frontend processing
-        for block in event_media_blocks:
-            response_text += f"{json.dumps(block)}\n\n"
-        
-        response_text += "The frontend will automatically display these as interactive video players with download capabilities."
-        
-        return [types.TextContent(type="text", text=response_text)]
+        return [
+            types.TextContent(type="text", text=f"{response_text}{yaml_output}"),
+            types.EmbeddedResource(
+                type="resource",
+                resource=types.TextResourceContents(
+                    uri=f"event_media://{data_id}", 
+                    text=json_output, 
+                    mimeType="application/json"
+                ),
+            ),
+        ]
         
     except Exception as e:
         logger.error(f"Error fetching event media: {str(e)}")
