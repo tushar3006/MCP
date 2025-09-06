@@ -292,6 +292,7 @@ To fetch video/image media for violations, use this query Sample:
 }]
 
 **Always** Only return Structured JSON response.
+**Never** explain how the videos will be loaded
 
 """
     
