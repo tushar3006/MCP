@@ -280,8 +280,12 @@ async def handle_get_event_media(arguments, db, *_):
         raise ValueError("Missing violation_ids argument")
     
     instructions = """
-To fetch video/image media for violations, use this format:
-
+To fetch video/image media for violations, use this query Sample:
+  SELECT DISTINCT VIOLATION_ID, DEVICE_EVENT_UUID
+  FROM PROTEX_DB_EU.PUBLIC.mart_shifts 
+  WHERE SITE_ID  = <<>>
+  AND 
+  VIOLATION_ID IN (<<>>)
 [{
     "DEVICE_EVENT_UUID": "found-uuid-here",
     "Region": "us"
@@ -291,6 +295,11 @@ Instructions:
 1. Query the mart_shifts table for DEVICE_EVENT_UUID where VIOLATION_ID matches the provided IDs
 2. Determine region based on database name (PROTEX_DB_US=us, PROTEX_DB_EU=eu, etc.)
 3. Return list of objects with DEVICE_EVENT_UUID and Region fields
+
+**Always** ensure The response message should never mention DEVICE_EVENT_UUID in text response.
+**Always** make sure the media fetching logic is abstracted for Users
+
+
 """
     
     return [types.TextContent(type="text", text=instructions)]
