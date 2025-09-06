@@ -288,7 +288,7 @@ FROM PROTEX_DB_EU.PUBLIC.mart_shifts
 WHERE SITE_ID IN [<<site_id>>
 AND VIOLATION_ID IN (<<violation_ids>>)
 
-Response Format:
+**CRITICAL** repond in flattened Response Format:
 [{
     "DEVICE_EVENT_UUID": "found-uuid-here",
     "VIOLATION_ID": "",
