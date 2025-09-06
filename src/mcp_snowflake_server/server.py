@@ -279,43 +279,21 @@ async def handle_get_event_media(arguments, db, *_):
     if not arguments or "violation_ids" not in arguments:
         raise ValueError("Missing violation_ids argument")
     
-    violation_ids = arguments["violation_ids"]
+    instructions = """
+To fetch video/image media for violations, use this format:
+
+[{
+    "DEVICE_EVENT_UUID": "found-uuid-here",
+    "Region": "us"
+}]
+
+Instructions:
+1. Query the mart_shifts table for DEVICE_EVENT_UUID where VIOLATION_ID matches the provided IDs
+2. Determine region based on database name (PROTEX_DB_US=us, PROTEX_DB_EU=eu, etc.)
+3. Return list of objects with DEVICE_EVENT_UUID and Region fields
+"""
     
-    # Determine database and region from connection
-    connection_args = db.connection_config or {}
-    database = connection_args.get("database", "").upper()
-    
-    # Regional database mapping
-    region_mapping = {
-        "PROTEX_DB_US": "us",
-        "PROTEX_DB_EU": "eu", 
-        "PROTEX_DB_APAC": "apac",
-        "PROTEX_DB_CA": "ca",
-        "PROTEX_DB_TESLA": "us"
-    }
-    region = region_mapping.get(database, "eu")
-    
-    # Build query
-    violation_ids_placeholders = "', '".join(violation_ids)
-    sql_query = f"""
-        SELECT DEVICE_EVENT_UUID
-        FROM {database}.PUBLIC.mart_shifts 
-        WHERE VIOLATION_ID IN ('{violation_ids_placeholders}')
-        AND DEVICE_EVENT_UUID IS NOT NULL
-        AND DEVICE_EVENT_UUID != ''
-    """
-    
-    query_results, _ = await db.execute_query(sql_query)
-    
-    # Return simple list format
-    result = []
-    for event in query_results:
-        result.append({
-            "DEVICE_EVENT_UUID": event.get("DEVICE_EVENT_UUID"),
-            "Region": region
-        })
-    
-    return [types.TextContent(type="text", text=str(result))]
+    return [types.TextContent(type="text", text=instructions)]
 
 
 async def prefetch_tables(db: SnowflakeDB, credentials: dict) -> dict:
