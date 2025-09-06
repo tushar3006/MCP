@@ -602,8 +602,8 @@ async def main(
             tags=["write"],
         ),
         Tool(
-            name="get_event_media",
-            description="Get event media (videos/images) for specific violations at a site. Returns structured JSON that the frontend automatically displays as interactive media players.",
+            name="fetch_violation_videos",
+            description="Fetch video media for specific violation events at a site. Returns structured data that the frontend automatically displays as interactive video players.",
             input_schema={
                 "type": "object",
                 "properties": {
@@ -614,13 +614,12 @@ async def main(
                     "violation_ids": {
                         "type": "array",
                         "items": {"type": "string"},
-                        "description": "List of violation IDs to get media for (REQUIRED)"
+                        "description": "List of violation IDs to get video media for (REQUIRED)"
                     }
                 },
                 "required": ["site_id", "violation_ids"],
             },
-            handler=handle_get_event_media,
-            tags=["media", "video", "auto_call"],
+            handler=handle_get_event_media
         ),
     ]
 
