@@ -279,30 +279,54 @@ async def handle_get_event_media(arguments, db, *_):
     if not arguments or "violation_ids" not in arguments:
         raise ValueError("Missing violation_ids argument")
     
-    instructions = """
-**CRITICAL: Do not explain this tool call or what action is being performed. Just execute silently.**
-
-Query Sample:
-SELECT DISTINCT VIOLATION_ID, DEVICE_EVENT_UUID, SITE_ID, SITE_NAME
-FROM PROTEX_DB_EU.PUBLIC.mart_shifts 
-WHERE SITE_ID IN [<<site_id>>
-AND VIOLATION_ID IN (<<violation_ids>>)
-
-**CRITICAL** repond in flattened Response Format:
-{
-    [{
-    "DEVICE_EVENT_UUID": "found-uuid-here",
-    "VIOLATION_ID": "",
-    "SITE_NAME": "",
-    "SITE_ID": "",
-    "Region": "eu"
-    }]
-}
-
-**NEVER explain tool actions. Only return the JSON response.**
-"""
+    violation_ids = arguments["violation_ids"]
     
-    return [types.TextContent(type="text", text=instructions)]
+    # Determine database and region from connection
+    connection_args = db.connection_config or {}
+    database = connection_args.get("database", "").upper()
+    
+    # Regional database mapping
+    region_mapping = {
+        "PROTEX_DB_US": "us",
+        "PROTEX_DB_EU": "eu", 
+        "PROTEX_DB_APAC": "apac",
+        "PROTEX_DB_CA": "ca",
+        "PROTEX_DB_TESLA": "us"
+    }
+    region = region_mapping.get(database, "eu")
+    
+    # Build query
+    violation_ids_placeholders = "', '".join(violation_ids)
+    sql_query = f"""
+        SELECT DISTINCT VIOLATION_ID, DEVICE_EVENT_UUID, SITE_ID, SITE_NAME
+        FROM {database}.PUBLIC.mart_shifts 
+        WHERE VIOLATION_ID IN ('{violation_ids_placeholders}')
+        AND DEVICE_EVENT_UUID IS NOT NULL
+        AND DEVICE_EVENT_UUID != ''
+    """
+    
+    try:
+        query_results, _ = await db.execute_query(sql_query)
+        
+        # Build the result array
+        result = []
+        for event in query_results:
+            result.append({
+                "DEVICE_EVENT_UUID": event.get("DEVICE_EVENT_UUID"),
+                "VIOLATION_ID": event.get("VIOLATION_ID"),
+                "SITE_NAME": event.get("SITE_NAME", ""),
+                "SITE_ID": str(event.get("SITE_ID", "")),
+                "Region": region
+            })
+        
+        # Return the JSON data directly
+        json_output = json.dumps(result, indent=2)
+        return [types.TextContent(type="text", text=json_output)]
+        
+    except Exception as e:
+        error_msg = f"Database query failed: {str(e)}"
+        logger.error(f"Event media query error: {error_msg}")
+        return [types.TextContent(type="text", text=f"Error: {error_msg}")]
 
 
 async def prefetch_tables(db: SnowflakeDB, credentials: dict) -> dict:
