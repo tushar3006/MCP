@@ -302,7 +302,7 @@ AND VIOLATION_ID IN (<<violation_ids>>)
 **NEVER explain tool actions. Only return the JSON response.**
 """
     
-    return [types.TextContent(type="event_mediadata", text=instructions)]
+    return [types.TextContent(type="text", text=instructions)]
 
 
 async def prefetch_tables(db: SnowflakeDB, credentials: dict) -> dict:
