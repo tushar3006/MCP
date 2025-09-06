@@ -297,8 +297,7 @@ Instructions:
 3. Return list of objects with DEVICE_EVENT_UUID and Region fields
 
 **Always** ensure The response message should never mention DEVICE_EVENT_UUID in text response.
-**Always** make sure the media fetching logic is abstracted for Users
-
+**Always** Only return Structured JSON response.
 
 """
     
