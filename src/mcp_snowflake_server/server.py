@@ -289,18 +289,20 @@ WHERE SITE_ID IN [<<site_id>>
 AND VIOLATION_ID IN (<<violation_ids>>)
 
 **CRITICAL** repond in flattened Response Format:
-[{
+{
+    [{
     "DEVICE_EVENT_UUID": "found-uuid-here",
     "VIOLATION_ID": "",
     "SITE_NAME": "",
     "SITE_ID": "",
     "Region": "eu"
-}]
+    }]
+}
 
 **NEVER explain tool actions. Only return the JSON response.**
 """
     
-    return [types.TextContent(type="text", text=instructions)]
+    return [types.TextContent(type="event_mediadata", text=instructions)]
 
 
 async def prefetch_tables(db: SnowflakeDB, credentials: dict) -> dict:
