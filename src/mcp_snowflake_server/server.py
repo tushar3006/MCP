@@ -582,6 +582,7 @@ async def main(
                 "required": ["site_id", "violation_ids"],
             },
             handler=handle_get_event_media,
+            tags=["media", "video", "auto_call"],
         ),
     ]
 
