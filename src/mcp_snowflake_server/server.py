@@ -277,95 +277,133 @@ async def handle_create_table(arguments, db, _, allow_write, __):
 
 @handle_tool_errors
 async def handle_get_event_media(arguments, db, *_):
-    """Get event media data (videos/images) for violations"""
+    """
+    Fetch event media (videos/images) for specific violations.
+    
+    This function retrieves DEVICE_EVENT_UUID values that the frontend uses
+    to display interactive media players for violation events.
+    """
+    # Validate input arguments
     if not arguments:
-        raise ValueError("Missing arguments for event media request")
+        raise ValueError("Arguments are required")
     
     site_id = arguments.get("site_id")
     violation_ids = arguments.get("violation_ids", [])
     
+    # Validate required parameters
     if not site_id:
         raise ValueError("site_id is required for security filtering")
     
-    if not violation_ids or len(violation_ids) == 0:
-        raise ValueError("violation_ids are required")
+    if not violation_ids:
+        raise ValueError("violation_ids list cannot be empty")
     
-    # Convert violation_ids to strings and validate
-    violation_ids = [str(vid) for vid in violation_ids]
+    # Sanitize and validate violation IDs
+    try:
+        sanitized_ids = [str(vid).strip() for vid in violation_ids if str(vid).strip()]
+        if not sanitized_ids:
+            raise ValueError("No valid violation IDs provided")
+    except Exception as e:
+        raise ValueError(f"Invalid violation_ids format: {str(e)}")
     
-    # Get database connection details to determine region
+    # Determine database and region from connection
     connection_args = db.connection_args or {}
     database = connection_args.get("database", "").upper()
     
-    # Map database to region
-    region_map = {
+    if not database:
+        raise ValueError("Database connection not properly configured")
+    
+    # Regional database mapping
+    region_mapping = {
         "PROTEX_DB_US": "us",
-        "PROTEX_DB_EU": "eu", 
-        "PROTEX_DB_APAC": "apac",
+        "PROTEX_DB_EU": "eu",
+        "PROTEX_DB_APAC": "apac", 
         "PROTEX_DB_CA": "ca",
         "PROTEX_DB_TESLA": "us"
     }
     
-    region = region_map.get(database, "eu")  # Default to EU
+    region = region_mapping.get(database, "unknown")
+    if region == "unknown":
+        logger.warning(f"Unknown database region for: {database}")
+        region = "eu"  # Safe default
     
-    # Build the query to get event UUIDs
-    violation_ids_str = "', '".join(violation_ids)
-    query = f"""
-        SELECT VIOLATION_ID, DEVICE_EVENT_UUID, SITE_ID, CAMERA_ID, RULE_ID, VIOLATION_DATE_WITH_TIMEZONE
+    # Build secure SQL query with parameterized violation IDs
+    violation_ids_placeholders = "', '".join(sanitized_ids)
+    
+    sql_query = f"""
+        SELECT 
+            VIOLATION_ID,
+            DEVICE_EVENT_UUID,
+            SITE_ID,
+            CAMERA_ID,
+            RULE_ID,
+            VIOLATION_DATE_WITH_TIMEZONE
         FROM {database}.PUBLIC.mart_shifts 
-        WHERE SITE_ID = {site_id} 
-        AND VIOLATION_ID IN ('{violation_ids_str}')
-        AND DEVICE_EVENT_UUID IS NOT NULL 
+        WHERE SITE_ID = {site_id}
+        AND VIOLATION_ID IN ('{violation_ids_placeholders}')
+        AND DEVICE_EVENT_UUID IS NOT NULL
+        AND DEVICE_EVENT_UUID != ''
         ORDER BY VIOLATION_DATE_WITH_TIMEZONE DESC
     """
     
     try:
-        data, data_id = await db.execute_query(query)
+        # Execute query
+        query_results, result_id = await db.execute_query(sql_query)
         
-        if not data:
+        # Handle no results
+        if not query_results:
             return [types.TextContent(
-                type="text", 
-                text=f"No event media found for site {site_id} with violation IDs: {', '.join(violation_ids)}"
+                type="text",
+                text=f"No media found for Site {site_id} with the provided violation IDs"
             )]
         
-        # Create clean, structured response for frontend
-        response_text = f"Found {len(data)} event video{'s' if len(data) != 1 else ''} for Site {site_id}:\n\n"
-        
-        # Create event_media structured response
-        event_media_data = {
+        # Build response data structure
+        media_response = {
             "type": "event_media",
-            "data_id": data_id,
-            "site_id": site_id,
+            "data_id": result_id,
+            "site_id": int(site_id),
             "region": region,
-            "data": []
+            "total_events": len(query_results),
+            "events": []
         }
         
-        # Add each event media
-        for row in data:
-            event_media_data["data"].append({
-                "REGION": region,
-                "DEVICE_EVENT_UUID": row["DEVICE_EVENT_UUID"]
-            })
+        # Process each media event
+        for event in query_results:
+            event_data = {
+                "violation_id": event.get("VIOLATION_ID"),
+                "device_event_uuid": event.get("DEVICE_EVENT_UUID"),
+                "camera_id": event.get("CAMERA_ID"),
+                "rule_id": event.get("RULE_ID"),
+                "timestamp": event.get("VIOLATION_DATE_WITH_TIMEZONE"),
+                "region": region
+            }
+            media_response["events"].append(event_data)
         
-        # Add structured JSON and embedded resource
-        yaml_output = data_to_yaml(event_media_data)
-        json_output = json.dumps(event_media_data, default=data_json_serializer)
+        # Format outputs
+        yaml_data = data_to_yaml(media_response)
+        json_data = json.dumps(media_response, default=data_json_serializer, indent=2)
+        
+        # Create user-friendly text summary
+        summary = f"📹 Found {len(query_results)} event video{'s' if len(query_results) != 1 else ''} for Site {site_id}"
         
         return [
-            types.TextContent(type="text", text=f"{response_text}{yaml_output}"),
+            types.TextContent(
+                type="text", 
+                text=f"{summary}\n\n{yaml_data}"
+            ),
             types.EmbeddedResource(
                 type="resource",
                 resource=types.TextResourceContents(
-                    uri=f"event_media://{data_id}", 
-                    text=json_output, 
+                    uri=f"event_media://{result_id}",
+                    text=json_data,
                     mimeType="application/json"
-                ),
-            ),
+                )
+            )
         ]
         
-    except Exception as e:
-        logger.error(f"Error fetching event media: {str(e)}")
-        raise ValueError(f"Failed to fetch event media: {str(e)}")
+    except Exception as query_error:
+        error_msg = f"Database query failed: {str(query_error)}"
+        logger.error(f"Event media query error: {error_msg}")
+        raise ValueError(error_msg)
 
 
 async def prefetch_tables(db: SnowflakeDB, credentials: dict) -> dict:
