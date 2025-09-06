@@ -291,12 +291,6 @@ To fetch video/image media for violations, use this query Sample:
     "Region": "us"
 }]
 
-Instructions:
-1. Query the mart_shifts table for DEVICE_EVENT_UUID where VIOLATION_ID matches the provided IDs
-2. Determine region based on database name (PROTEX_DB_US=us, PROTEX_DB_EU=eu, etc.)
-3. Return list of objects with DEVICE_EVENT_UUID and Region fields
-
-**Always** ensure The response message should never mention DEVICE_EVENT_UUID in text response.
 **Always** Only return Structured JSON response.
 
 """
